@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Introduction to Moral Issues.md",
+                "file": "Abstract Algebra.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Introduction to Moral Issues.md",
+                "file": "Abstract Algebra.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Introduction to Moral Issues.md",
+                "file": "Abstract Algebra.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Introduction to Moral Issues.md"
+                "file": "Abstract Algebra.md"
               }
             }
           }
@@ -146,21 +146,21 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "9d1d6a9d01fd83ff",
+  "active": "42d89854d9abde74",
   "lastOpenFiles": [
+    "Advanced Laboratory in Physics.md",
+    "Advanced Linear Algebra.md",
+    "Capstone Preparation.md",
+    "Introduction to Moral Issues.md",
+    "Statistical Physics.md",
     "Statistical Physics",
     "Introduction to Moral Issues",
     "Capstone Preparation",
     "Advanced Linear Algebra",
     "Advanced Laboratory in Physics",
     "Abstract Algebra/Untitled.md",
-    "Introduction to Moral Issues.md",
     "Abstract Algebra",
-    "Capstone Preparation.md",
-    "Advanced Linear Algebra.md",
     "Abstract Algebra.md",
-    "Advanced Laboratory in Physics.md",
-    "Statistical Physics.md",
     "README.md"
   ]
 }
