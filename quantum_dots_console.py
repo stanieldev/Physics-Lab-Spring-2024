@@ -10,6 +10,58 @@ from math import inf as Inf
 import scipy as sp
 USE_LMFIT = True
 
+# Create a function that takes in a wavelength and returns the color as RGB
+def wavelength_to_rgb(wavelength, gamma=0.8):
+    
+    # Check if wavelength is iterable
+    if hasattr(wavelength, "__iter__"):
+        return np.array([wavelength_to_rgb(x) for x in wavelength])
+
+    # Convert wavelength to RGB
+    wavelength = float(wavelength)
+    if wavelength <= 380:
+        attenuation = 0.3
+        R = ((attenuation) ** gamma) * np.exp(-5 * ((wavelength - 380) / 50) ** 2)
+        G = 0.0
+        B = ((attenuation) ** gamma) * np.exp(-5 * ((wavelength - 380) / 50) ** 2)
+    elif wavelength >= 380 and wavelength <= 440:
+        attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
+        R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
+        G = 0.0
+        B = (1.0 * attenuation) ** gamma
+    elif wavelength >= 440 and wavelength <= 490:
+        R = 0.0
+        G = ((wavelength - 440) / (490 - 440)) ** gamma
+        B = 1.0
+    elif wavelength >= 490 and wavelength <= 510:
+        R = 0.0
+        G = 1.0
+        B = (-(wavelength - 510) / (510 - 490)) ** gamma
+    elif wavelength >= 510 and wavelength <= 580:
+        R = ((wavelength - 510) / (580 - 510)) ** gamma
+        G = 1.0
+        B = 0.0
+    elif wavelength >= 580 and wavelength <= 645:
+        R = 1.0
+        G = (-(wavelength - 645) / (645 - 580)) ** gamma
+        B = 0.0
+    elif wavelength >= 645 and wavelength <= 750:
+        attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
+        R = (1.0 * attenuation) ** gamma
+        G = 0.0
+        B = 0.0
+    else:
+        attenuation = 0.3
+        R = ((attenuation) ** gamma) * np.exp(-5 * ((wavelength - 750) / 50) ** 2)
+        G = 0.0
+        B = 0.0
+
+    # Return the RGB values
+    return (R, G, B)
+
+
+
+
 
 # Define the gaussian function
 def gauss(x, A, mu, s):
@@ -152,6 +204,23 @@ def filter(x, y, min_lambda: float, max_lambda: float) -> tuple[np.ndarray, np.n
     return x[np.where((x > min_lambda) & (x < max_lambda))], \
            y[np.where((x > min_lambda) & (x < max_lambda))]
 
+# Def autosave figure function
+def autosave_figure(directory: str) -> None:
+
+    # Save the figure to the quantum_dots directory
+    file_name = os.path.splitext(os.path.basename(directory))[0]
+    new_file_name = f"./quantum_dots/{file_name}.png"
+    if os.path.isfile(new_file_name):
+        i = 1
+        while True:
+            if os.path.isfile(f"./quantum_dots/{file_name}_{i}.png"):
+                i += 1
+            else:
+                plt.savefig(f"./quantum_dots/{file_name}_{i}.png")
+                break
+    else:
+        plt.savefig(new_file_name)
+
 # Define save figure function
 def save_figure(directory: str) -> None:
 
@@ -187,7 +256,8 @@ def main():
     parser.add_argument("-d", "--diameter", type=int, nargs="+", help="Diameter of quantum dots")
     parser.add_argument("-min", "--min_lambda", type=float, nargs="+", help="Minimum wavelength")
     parser.add_argument("-max", "--max_lambda", type=float, nargs="+", help="Maximum wavelength")
-    parser.add_argument("-m","--model", type=str, nargs="+", default=["gauss"], help="Model to use for fitting")
+    parser.add_argument("-m","--model", type=str, nargs="+", default=[], help="Model to use for fitting")
+    parser.add_argument("-sf","--save_figure", type=str, nargs="+", default=False, help="Save the figure")
     args = parser.parse_args()
 
     # Check if diameter is empty
@@ -197,6 +267,15 @@ def main():
     wavelength, intensity = read_data(args.file)
     wavelength, intensity = filter(wavelength, intensity, min_lambda=args.min_lambda, max_lambda=args.max_lambda)
     intensity_error = np.sqrt(np.abs(5 * intensity)) / 5
+
+    # Set up the graph
+    plt.title(f"Emission Intensity vs Wavelength ({args.diameter[0]}nm Diameter)")
+    plt.ylabel("Intensity (counts per 500 ms)")
+    plt.xlabel("Wavelength (nm)")
+
+    # Plot the data using the wavelength_to_rgb function
+    # plt.errorbar(wavelength, intensity, yerr=intensity_error, fmt=".", label=f"{args.diameter[0]}nm Data")
+    [plt.plot(w, i, ".", color=c) for w, i, c in zip(wavelength, intensity, wavelength_to_rgb(wavelength))]
 
     # Check if any models are specified
     if "gauss" in args.model:
@@ -212,12 +291,11 @@ def main():
     if args.model is not None:
         plt.legend()
 
-    # Plot the data
-    plt.errorbar(wavelength, intensity, yerr=intensity_error, fmt=".", label=f"{args.file}")
-    plt.title(f"Emission Intensity vs Wavelength ({args.diameter[0]}nm Diameter)")
-    plt.ylabel("Intensity (counts per 500 ms)")
-    plt.xlabel("Wavelength (nm)")
-    save_figure(args.file)
+    # Autosave the figure if savefigure is specified
+    if args.save_figure:
+        autosave_figure(args.file)
+
+    # Show the plot
     plt.show(block=True)
 
     

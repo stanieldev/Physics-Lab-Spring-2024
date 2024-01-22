@@ -13,9 +13,9 @@ c = SPEED_OF_LIGHT_METERSEC = 299792458
 # Materials
 class CdSe:
     def __init__(self) -> None:
-        self.E_g = 9.1093837*ELECTRON_VOLT_JOULES
+        self.E_g = 1.74 * ELECTRON_VOLT_JOULES
         self.m_e = 0.13 * ELECTRON_MASS_KILOGRAMS
-        self.m_h = 0.60 * ELECTRON_MASS_KILOGRAMS
+        self.m_h = 0.45 * ELECTRON_MASS_KILOGRAMS
 
 class InP :
     def __init__(self) -> None:
