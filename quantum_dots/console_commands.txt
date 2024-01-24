@@ -1,0 +1,8 @@
+# Plotting Data for Cadmium Selenide
+python -m quantum_dots_console "c:\Users\micro\Code\Physics-Lab-Spring-2024\quantum_dots\CdSe_2R3nm.txt" -d 2.3 -c -a -ns
+python -m quantum_dots_console "c:\Users\micro\Code\Physics-Lab-Spring-2024\quantum_dots\CdSe_2R6nm.txt" -d 2.6 -c -a -ns
+python -m quantum_dots_console "c:\Users\micro\Code\Physics-Lab-Spring-2024\quantum_dots\CdSe_3R3nm.txt" -d 3.3 -c -a -ns
+python -m quantum_dots_console "c:\Users\micro\Code\Physics-Lab-Spring-2024\quantum_dots\CdSe_4R6nm.txt" -d 4.6 -c -a -ns
+python -m quantum_dots_console "c:\Users\micro\Code\Physics-Lab-Spring-2024\quantum_dots\CdSe_5R6nm.txt" -d 5.6 -c -a -ns
+python -m quantum_dots_console "c:\Users\micro\Code\Physics-Lab-Spring-2024\quantum_dots\CdSe_6R9nm.txt" -d 6.9 -c -a -ns
+

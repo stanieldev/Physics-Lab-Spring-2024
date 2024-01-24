@@ -143,8 +143,8 @@ def fit_voigt(x, y, dy):
 
 # Define the console program class
 class ConsoleProgram:
-    def __init__(self):
-        self.DEBUG = False
+    def __init__(self, DEBUG=False):
+        self.DEBUG = DEBUG
     
     # Define the parse console function
     def parse_console(self):
@@ -156,7 +156,7 @@ class ConsoleProgram:
         parser.add_argument("-l", "--min", const=True, nargs="?", type=float, help="Minimum wavelength in nm")
         parser.add_argument("-u", "--max", const=True, nargs="?", type=float, help="Maximum wavelength in nm")
         parser.add_argument("-m", "--model", nargs="+", type=str, default=[], help="Model to use for fitting")
-        parser.add_argument("-s", "--show", const=True, nargs="?", type=bool, default=True, help="Show figure option")
+        parser.add_argument("-ns", "--noshow", const=True, nargs="?", type=bool, default=False, help="Don't show figure option")
         parser.add_argument("-c", "--color", const=True, nargs="?", type=bool, default=False, help="Display color option")
         parser.add_argument("-a", "--autosave", const=True, nargs="?", type=bool, default=False, help="Autosave figure option")
         args = parser.parse_args()
@@ -185,7 +185,7 @@ class ConsoleProgram:
         self.min = args.min
         self.max = args.max
         self.model = args.model
-        self.show = args.show
+        self.show = not args.noshow
         self.color = args.color
         self.autosave = args.autosave
 
@@ -265,7 +265,7 @@ class ConsoleProgram:
 
                 # Plot the gaussian and peak using the parameters
                 COLOR = np.random.rand(3,)
-                x = np.linspace(min(x_data), max(x_data), 1000)
+                x = np.linspace(min(self.x_data), max(self.x_data), 1000)
                 plt.plot(x, gauss(x, result.best_values["A"], result.best_values["mu"], result.best_values["s"]), label=f"Gaussian Distribution", color=COLOR, zorder=3)
                 plt.axvline(result.best_values["mu"], linestyle="--", label=f"λ±dλ = {result.best_values['mu']:.1f}±{result.params['mu'].stderr:.1f}nm", color=COLOR)
 
@@ -290,12 +290,13 @@ class ConsoleProgram:
         # If show is true, show the plot
         if self.show:
             plt.show(block=True)
+            
 
 
 
 # Define the main function
 def main():
-    program = ConsoleProgram()
+    program = ConsoleProgram(DEBUG=False)
     program.parse_console()
     program.plot_data()
 
