@@ -1,153 +1,53 @@
 # Imports
 import numpy as np
 import matplotlib.pyplot as plt
-plt.ion()
-
-# Constants
-m_e = ELECTRON_MASS_KILOGRAMS = 9.1093837e-31
-eV = ELECTRON_VOLT_JOULES = 1.60217662e-19
-h = PLANCK_CONSTANT_JOULESEC = 6.62607004e-34
-c = SPEED_OF_LIGHT_METERSEC = 299792458
 
 
 # Materials
 class CdSe:
     def __init__(self) -> None:
-        self.E_g = 1.74 * ELECTRON_VOLT_JOULES
-        self.m_e = 0.13 * ELECTRON_MASS_KILOGRAMS
-        self.m_h = 0.45 * ELECTRON_MASS_KILOGRAMS
+        self.E_g = 1.74  # eV
+        self.m_e = 0.13  # Proportion of electron mass
+        self.m_h = 0.45  # Proportion of electron mass
 
 class InP :
     def __init__(self) -> None:
-        self.E_g = 1.34 * ELECTRON_VOLT_JOULES
-        self.m_e = 0.08 * ELECTRON_MASS_KILOGRAMS
-        self.m_h = 0.60 * ELECTRON_MASS_KILOGRAMS
-
-
-# Wavelength Models
-class LambdaModels:
-    def find_model(self, name: str):
-        if name == "1D Square Well":
-            return self.OneDimSquareWell
-        elif name == "3D Square Well":
-            return self.ThreeDimSquareWell
-        elif name == "3D Square Well with Gap":
-            return self.ThreeDimSquareWellGapped
-        elif name == "Spherical Well with Gap":
-            return self.SphericalWellGapped
-        elif name == "Spherical Well with Gap and Reduced Mass":
-            return self.SphericalWellGappedReduced
-        else:
-            raise ValueError("Invalid Model Name")
-
-    def OneDimSquareWell(self, quantum_dot_diameter: float, material=None):
-        return (8 * m_e * c * (quantum_dot_diameter)**2) / h
-    
-    def ThreeDimSquareWell(self, quantum_dot_diameter: float, material=None):
-        return (8/3 * m_e * c * (quantum_dot_diameter)**2) / h
-
-    def ThreeDimSquareWellGapped(self, quantum_dot_diameter: float, material: CdSe or InP):
-        return (h*c)/(material.E_g + (8/3 * m_e * c * (quantum_dot_diameter)**2) / h)
-    
-    def SphericalWellGapped(self, quantum_dot_diameter: float, material: CdSe or InP):
-        return (h*c)/(material.E_g + (h**2 / (2 * m_e * (quantum_dot_diameter)**2)))
-
-    def SphericalWellGappedReduced(self, quantum_dot_diameter: float, material: CdSe or InP):
-        inverse_reduced_mass = (1/material.m_e + 1/material.m_h)
-        return (h*c)/(material.E_g + (h**2 / (2 * inverse_reduced_mass * (quantum_dot_diameter)**2)))
+        self.E_g = 1.34  # eV
+        self.m_e = 0.08  # Proportion of electron mass
+        self.m_h = 0.60  # Proportion of electron mass
 
 
 
-# Create default plot
-def create_default_plot(diameter_str) -> None:
-    plt.title(f"Emission Intensity vs Wavelength ({diameter_str} Diameter)")
-    plt.ylabel("Intensity (counts per 500 ms)")
-    plt.xlabel("Wavelength (nm)")
-    plt.show(block=False)
+# OneDimSquareWell
+def E1(diameter_nm: float, material=None):
+    k = 0.376125244618  # eV nm^2  ( hc²/(8 m_ec²) )
+    return k / (diameter_nm ** 2)
 
-# Filter data
-def filter_data(λ: np.ndarray, I: np.ndarray, dI: np.ndarray, λ_min: float, λ_max: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    return λ[np.where((λ >= λ_min) & (λ <= λ_max))], \
-           I[np.where((λ >= λ_min) & (λ <= λ_max))], \
-          dI[np.where((λ >= λ_min) & (λ <= λ_max))]
+# ThreeDimSquareWell
+def E2(diameter_nm: float, material=None):
+    k = 1.12837573386  # eV nm^2  ( 3 hc²/(8 m_ec²) )
+    return k / (diameter_nm ** 2)
 
-# Get index from user, validate, and add to queue
-def prompt_user_data() -> list[str]:
+# ThreeDimSquareWellGapped
+def E3(diameter_nm: float, material: CdSe or InP):
+    return material.E_g + E2(diameter_nm)
 
-    # Print available data options
-    AVAILABLE_DATA = ["All", "500nm", "520nm", "560nm", "600nm", "620nm", "640nm"]
-    print("Available data: ")
-    [print(f"{i}: {AVAILABLE_DATA[i]}") for i in range(1, len(AVAILABLE_DATA))]
-    print("0: All data")
+# SphericalWellGapped
+def E4(diameter_nm: float, material: CdSe or InP):
+    k = 0.376125244618  # eV nm^2  ( hc²/(8 m_ec²) )
+    return k / (diameter_nm ** 2) + material.E_g
 
-    # Get user input
-    while True:
-        try:
-            # Get index
-            user_input = input("Enter the number/wavelength of the data you want to use: ")
+# SphericalWellGappedReduced
+def E5(diameter_nm: float, material: CdSe or InP):
+    k = 0.376125244618  # eV nm^2  ( hc²/(8 m_ec²) )
+    return (k / (diameter_nm ** 2))*(1/material.m_e + 1/material.m_h) + material.E_g
 
-            # Check if user input is "all"
-            if user_input == "0" or user_input.lower() == "all":
-                return AVAILABLE_DATA[1:]
 
-            # Check if user input is an index in the list
-            elif user_input in [f"{i}" for i in range(1, len(AVAILABLE_DATA))]:
-                return [AVAILABLE_DATA[user_input]]
-            
-            # Check if user input is a wavelength
-            elif user_input in [i[:3] for i in AVAILABLE_DATA[1:]]:
-                return [f"{user_input}nm"]
-            
-            # Invalid input
-            else:
-                raise ValueError("Invalid Index/Wavelength")
-                
-        except Exception as e:
-            print(e)
-            continue
 
-# Get index from user, validate, and add to queue
-def prompt_user_model() -> list[str]:
 
-    # Print available data options
-    AVAILABLE_MODELS = ["All", "1D Square Well", "3D Square Well", "3D Square Well with Gap", "Spherical Well with Gap", "Spherical Well with Gap and Reduced Mass"]
-    print("Available models: ")
-    [print(f"{i}: {AVAILABLE_MODELS[i]}") for i in range(1, len(AVAILABLE_MODELS))]
-    print("0: All models")
-    
-    # Get user input
-    while True:
-        try:
-            # Get index
-            user_input = int(input("Enter the number of the model you want to use: "))
-
-            # If user input is 0, return all models
-            if user_input == 0:
-                return AVAILABLE_MODELS[1:]
-            
-            # If model is between 1 and the length of the list, return the model
-            elif user_input in range(1, len(AVAILABLE_MODELS)):
-                return [AVAILABLE_MODELS[user_input]]
-
-            # Invalid input
-            else:
-                raise ValueError("Invalid Index/Wavelength")
-                
-        except Exception as e:
-            print(e)
-            continue
-
-# Get min-max range for fitting
-def prompt_user_min_max_range() -> tuple[float, float]:
-    while True:
-        try:
-            min_wavelength = float(input("Enter the minimum wavelength (nm) for fitting: "))
-            max_wavelength = float(input("Enter the maximum wavelength (nm) for fitting: "))
-            break
-        except TypeError as e:
-            print(e)
-            continue
-    return min_wavelength, max_wavelength
+# Energy to Wavelength
+def Lambda(E: float):
+    return 1240/E  # nm
 
 
 
@@ -157,64 +57,114 @@ def prompt_user_min_max_range() -> tuple[float, float]:
 
 
 
+# Data Constants
+CdSe_diameters = [2.3, 2.6, 3.3, 4.6, 5.6, 6.9]  # nm
+CdSe_wavelengths = [524.3, 535.3, 558.3, 620.7, 635.4, 656.7]  # nm
+CdSe_HWHM = [26.94, 17.73, 15.62, 10.43, 18.58, 16.11]  # nm
+
+InP_diameters = np.array([4.7, 5.1, 5.4, 5.8])  # nm
+InP_wavelengths = np.array([528.7, 568.2, 596.9, 621.2])  # nm
+InP_HWHM = np.array([24.96, 17.33, 23.71, 30.08])  # nm
+
+
+# Chi-Squared Function
+def chi_squared(model, diameters, wavelengths, HWHM):
+    chi_squared = 0
+    for d, w, H in zip(diameters, wavelengths, HWHM):
+        chi_squared += (Lambda(model(d, CdSe())) - w)**2 / (H**2)
+    return chi_squared
+
+# # Print Chi-Squared Values
+# print("Chi-Squared Values:")
+# DIVISOR = 5
+# print("1D Square Well: ", chi_squared(E1, CdSe_diameters, CdSe_wavelengths, CdSe_HWHM)/DIVISOR)
+# print("3D Square Well: ", chi_squared(E2, CdSe_diameters, CdSe_wavelengths, CdSe_HWHM)/DIVISOR)
+# print("3D Square Well with Gap: ", chi_squared(E3, CdSe_diameters, CdSe_wavelengths, CdSe_HWHM)/DIVISOR)
+# print("Spherical Well with Gap: ", chi_squared(E4, CdSe_diameters, CdSe_wavelengths, CdSe_HWHM)/DIVISOR)
+# print("Spherical Well with Gap and Reduced Mass: ", chi_squared(E5, CdSe_diameters, CdSe_wavelengths, CdSe_HWHM)/DIVISOR)
 
 
 
-# Main
-def main():
 
-    # Load queue based on user input
-    data_queue = prompt_user_data()
-    for diameter_str in data_queue:
+# # Plot InP wavelength vs diameter
+# plt.figure()
+# plt.xlabel('Diameter (nm)')
+# plt.ylabel('Peak Wavelength (nm)')
+# plt.title('InP Peak Wavelength vs Diameter')
+# plt.plot(InP_diameters, InP_wavelengths, 'o')
 
-        # Useful variables
-        diameter_meters = float(diameter_str[:-2])
-        diameter_nanometers = float(diameter_str[:-2]) * 1e9
+# # Plot the 5 models for InP
+# diameters = np.linspace(4.5, 6, 1000)
+# plt.plot(diameters, [Lambda(E5(d, InP())) for d in diameters], label='Spherical Well with Gap and Reduced Mass')
+# plt.legend()
 
-        # Read data from file
-        wavelength, intensity = np.loadtxt(f"quantum_dots/{diameter_str}.txt", skiprows=1, unpack=True)
-        intensity_error = np.sqrt(np.abs(5 * intensity)) / 5
+# # Show plot
+# plt.show()
 
-        # First plot (whole domain)
-        plt.errorbar(wavelength, intensity, yerr=intensity_error, fmt=".", label=f"{diameter_str} Diameter")
-        create_default_plot(diameter_str)
 
-        # Ask user for min-max range for fitting and filter
-        lambda_min, lambda_max = prompt_user_min_max_range()
-        plt.close()
+# Plot an inverse plot of InP wavelength vs diameter
+plt.figure()
+plt.xlabel('Peak Wavelength (nm)')
+plt.ylabel('Diameter (nm)')
+plt.title('InP Diameter vs. Peak Wavelength')
+plt.plot(InP_wavelengths, InP_diameters, 'o', color="blue")
+plt.plot(InP_wavelengths + InP_HWHM, InP_diameters, 'o', alpha=0.75, color="blue")
+plt.plot(InP_wavelengths + 2*InP_HWHM, InP_diameters, 'o', alpha=0.50, color="blue")
+plt.plot(InP_wavelengths + 3*InP_HWHM, InP_diameters, 'o', alpha=0.25, color="blue")
+plt.plot(InP_wavelengths - InP_HWHM, InP_diameters, 'o', alpha=0.75, color="blue")
+plt.plot(InP_wavelengths - 2*InP_HWHM, InP_diameters, 'o', alpha=0.50, color="blue")
+plt.plot(InP_wavelengths - 3*InP_HWHM, InP_diameters, 'o', alpha=0.25, color="blue")
 
-        # Second plot (filtered domain)
-        wavelength, intensity, intensity_error = filter_data(wavelength, intensity, intensity_error, lambda_min, lambda_max)
-        plt.errorbar(wavelength, intensity, yerr=intensity_error, fmt=".", label=f"{diameter_str} Diameter")
-        create_default_plot(diameter_str)
-        
-        # Ask user for model
-        model_queue = prompt_user_model()
-        plt.close()
-        for model in model_queue:
+# Inverse SphericalWellGappedReduced
+def inv_E5(energy: float, material: CdSe or InP):
+    k = 0.376125244618  # eV nm^2  ( hc²/(8 m_ec²) )
+    return np.sqrt( k*(1/material.m_e + 1/material.m_h) / (energy + material.E_g) )
 
-            # Find model
-            function = LambdaModels().find_model(model)
-            
-            # Testing
-            print(f"{diameter_meters=}")
-            print(f"{function(diameter_meters, material=CdSe())=}")
 
-            # Expected peak (nm)
-            peak = function(diameter_meters, material=CdSe()) * 1e9
-            print(f"Peak: {peak} nm")
-            plt.axvline(peak, label=f"{model} Peak")
-        
-        # Third plot (filtered domain with models)
-        plt.errorbar(wavelength, intensity, yerr=intensity_error, fmt=".", label=f"{diameter_str} Diameter")
-        plt.legend()
-        create_default_plot(diameter_str)
-        input("Press enter to continue...")
+# Plot inv5E
+wavelength = np.linspace(500, 650, 1000)
+plt.plot(wavelength, [inv_E5(1240/w, InP()) for w in wavelength], label='Inverse Spherical Well with Gap and Reduced Mass')
+plt.show()
 
-        
 
-    
+# Plot CdSe wavelength vs diameter
+plt.figure()
+plt.xlabel('Diameter (nm)')
+plt.ylabel('Peak Wavelength (nm)')
+plt.title('CdSe Peak Wavelength vs Diameter')
+plt.plot(CdSe_diameters, CdSe_wavelengths, 'o')
 
-# Main guard
-if __name__ == "__main__":
-    main()
+# Plot the 5 models for CdSe
+diameters = np.linspace(2, 7, 1000)
+# plt.plot(diameters, [Lambda(E1(d)) for d in diameters], label='1D Square Well')
+# plt.plot(diameters, [Lambda(E2(d)) for d in diameters], label='3D Square Well')
+plt.plot(diameters, [Lambda(E3(d, CdSe())) for d in diameters], label='3D Square Well with Gap')
+plt.plot(diameters, [Lambda(E4(d, CdSe())) for d in diameters], label='Spherical Well with Gap')
+plt.plot(diameters, [Lambda(E5(d, CdSe())) for d in diameters], label='Spherical Well with Gap and Reduced Mass')
+plt.legend()
+
+# Show plot
+plt.show()
+
+
+
+
+# # Plot CdSe wavelength vs diameter
+# plt.figure()
+# plt.xlabel('Diameter (nm)')
+# plt.ylabel('log(Peak Wavelength) (nm)')
+# plt.title('CdSe Peak Wavelength vs Diameter')
+# plt.plot(CdSe_diameters, np.log(CdSe_wavelengths), 'o')
+
+# # Plot the 5 models for CdSe
+# diameters = np.linspace(2, 7, 1000)
+# plt.plot(diameters, [np.log(Lambda(E1(d))) for d in diameters], label='1D Square Well')
+# plt.plot(diameters, [np.log(Lambda(E2(d))) for d in diameters], label='3D Square Well')
+# plt.plot(diameters, [np.log(Lambda(E3(d, CdSe()))) for d in diameters], label='3D Square Well with Gap')
+# plt.plot(diameters, [np.log(Lambda(E4(d, CdSe()))) for d in diameters], label='Spherical Well with Gap')
+# plt.plot(diameters, [np.log(Lambda(E5(d, CdSe()))) for d in diameters], label='Spherical Well with Gap and Reduced Mass')
+# plt.legend()
+
+# # Show plot
+# plt.show()
+
