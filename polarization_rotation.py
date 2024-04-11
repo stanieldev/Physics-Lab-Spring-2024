@@ -165,7 +165,7 @@ if DC_POLARIZATION:
     plt.show()
 
 
-DC_POLARIZATION_2 = True
+DC_POLARIZATION_2 = False
 if DC_POLARIZATION_2:
 
     # Load the data
@@ -198,5 +198,42 @@ if DC_POLARIZATION_2:
     plt.plot(field_Gauss, result.best_fit, label='Fit')
     plt.legend()
     plt.show()
+
+
+
+AC_DRIVING_FREQUENCY = True
+if AC_DRIVING_FREQUENCY:
+    
+    # Load the data
+    raw_data = np.loadtxt('polarization_rotation/ac_sine_driving_frequency.tsv', delimiter='\t', skiprows=1)
+
+    # Extract the columns
+    frequency = raw_data[:, 0]  # Hz
+    current = raw_data[:, 1]    # mA
+    current /= np.max(current)  # Normalize the current
+
+    # Plot with the data with a log2 scale on the x-axis
+    plt.plot(frequency, current, 'o')
+    plt.xscale('log')
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Normalized Current')
+    plt.title('AC Driving Frequency')
+
+    # Create a model
+    def driven_current(w, R, L, C):
+        return 1 / np.sqrt(R**2 + (w*L - (1/(w*C)))**2)
+    model = Model(driven_current)
+    params = model.make_params(R=4.5, L=1e-2, C=1e-6)
+    result = model.fit(current, params, w=2*np.pi*frequency)
+    print(result.fit_report())
+
+    # Plot the fit
+    X = np.logspace(2, 4, 100)
+    plt.plot(X, result.eval(w=2*np.pi*X), label='Fit')
+    plt.legend()
+
+    # Show the plot
+    plt.show()
+    
 
 
