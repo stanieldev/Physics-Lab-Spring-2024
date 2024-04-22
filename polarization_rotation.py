@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from lmfit.models import LinearModel
 from lmfit import Model
+from lab_utilities.datatypes import Datum, Units
 MU_0 = 4*np.pi*1e-7
 GLASS_ROD_LENGTH = 0.10  # m
 
@@ -250,59 +251,71 @@ AC_POLARIZATION = True
 if AC_POLARIZATION:
     
     # Constants
-    R = 2.033   # Ohm
+    R = Datum(2.033, 0.010, Units.ohm)
 
     # Load the data
-    raw_data = np.loadtxt('polarization_rotation/ac_polarization.tsv', delimiter='\t', skiprows=1)
+    raw_data = np.loadtxt('polarization_rotation/ac_polarization.tsv', delimiter='\t', skiprows=4)
 
     # Extract the columns
-    DC_SIGNAL = raw_data[:, 0][1:]  # mV
-    DC_SIGNAL = DC_SIGNAL / R   # mA
-    AC_SIGNAL = raw_data[:, 1][1:]  # mV
-    AC_SIGNAL = AC_SIGNAL / R   # mA
+    RMS_SIGNAL = [Datum(voltage_mv/1000, 0.000001, Units.V) for voltage_mv in raw_data[:, 0]]
+    RMS_SIGNAL = [voltage / R for voltage in RMS_SIGNAL]
+    print(RMS_SIGNAL)
+
+
+
+    RMS_LOCKIN = raw_data[:, 1]        # mV
+    DC_SIGNAL = raw_data[:, 2]         # mV
 
     # Calculate the RMS B-field
-    def average_glass_bfield(I):
-        m = 9.51858
-        L = 0.152231   # m
-        R = 0.0101374  # m
-        D = 1.02e-3    # m
+    def average_glass_bfield(current_mA):
+        m = Datum(9.51858, 0, "")
+        L = Datum(0.152231, 0, "m")
+        R = Datum(0.0101374, 0, "m")
+        D = Datum(1.02e-3, 0, "m")
+        MU = Datum(4*np.pi*1e-7, 0, "H")/Datum(1, 0, "m")
 
         # Calculate the magnetic field
-        z = np.linspace(-GLASS_ROD_LENGTH/2, GLASS_ROD_LENGTH/2, 1000)
-        K = m * I * MU_0 / (2 * D)
-        seg1 = (L/2 - z) / np.sqrt((L/2 - z)**2 + R**2)
-        seg2 = (-L/2 - z) / np.sqrt((-L/2 - z)**2 + R**2)
-        dB = K * (seg1 - seg2)
+        Z = np.linspace(-GLASS_ROD_LENGTH/2, GLASS_ROD_LENGTH/2, 1000)
+        Z = [Datum(val, 0, "m") for val in z]
+        K = m * MU / (2 * D)
+        seg1 = np.array([(L.value/2 - z.value) / np.sqrt((L.value/2 - z.value)**2 + R.value**2) for z in Z])
+        seg2 = np.array([(-L.value/2 - z.value) / np.sqrt((-L.value/2 - z.value)**2 + R.value**2) for z in Z])
+        dB = K * (seg1 - seg2) * current_mA
+        dB = [val.value for val in dB]
 
         # Integrate the average magnetic field
-        return np.trapz(dB, z)/GLASS_ROD_LENGTH  # mT
+        print(np.trapz(dB, z)/GLASS_ROD_LENGTH)
+        return np.trapz(dB, z)/GLASS_ROD_LENGTH  # T
 
-    RMS_B_FIELD = [average_glass_bfield(I) for I in AC_SIGNAL]
+    RMS_B_FIELD_T = [average_glass_bfield(I) for I in [val.value for val in RMS_SIGNAL]]
 
     # Calculate the RMS phase offset
-    RMS_PHASE = 0.5 * AC_SIGNAL/DC_SIGNAL  # rad
+    RMS_PHASE = 0.5 * RMS_LOCKIN/DC_SIGNAL  # rad
 
     # Plot with the data
-    plt.plot(RMS_B_FIELD, RMS_PHASE, 'o')
-    plt.xlabel('RMS B-field (mT)')
+    plt.plot(RMS_B_FIELD_T, RMS_PHASE, 'o')
+    plt.xlabel('RMS B-field (T)')
     plt.ylabel('RMS Phase Offset (rad)')
     plt.title('AC Polarization Rotation')
 
     # Fit a linear model
     model = LinearModel()
     params = model.make_params()
-    result = model.fit(RMS_PHASE, params, x=RMS_B_FIELD)
+    result = model.fit(RMS_PHASE, params, x=RMS_B_FIELD_T)
     print(result.fit_report())
 
     # Plot the fit
-    X = np.linspace(0, 0.003, 100)
-    plt.plot(X, result.eval(x=X), label='Fit')
-    plt.legend()
+    plt.plot(RMS_B_FIELD_T, result.best_fit, label='Fit')
 
+    # Print the verdet constant
+    K = 180/np.pi/(10**6)  # deg/G/cm
+    slope = K * result.best_values['slope']/GLASS_ROD_LENGTH
+    slope_err = K * result.params['slope'].stderr/GLASS_ROD_LENGTH
+    print(f"Verdet constant: {slope} deg/G/cm")
+    
     # Show the plot
+    plt.legend()
     plt.show()
-
 
 
 
