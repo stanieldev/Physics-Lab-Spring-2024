@@ -251,43 +251,36 @@ AC_POLARIZATION = True
 if AC_POLARIZATION:
     
     # Constants
-    R = Datum(2.033, 0.010, Units.ohm)
+    R = 2.033
 
     # Load the data
     raw_data = np.loadtxt('polarization_rotation/ac_polarization.tsv', delimiter='\t', skiprows=4)
 
     # Extract the columns
-    RMS_SIGNAL = [Datum(voltage_mv/1000, 0.000001, Units.V) for voltage_mv in raw_data[:, 0]]
-    RMS_SIGNAL = [voltage / R for voltage in RMS_SIGNAL]
-    print(RMS_SIGNAL)
-
-
-
+    RMS_SIGNAL =  raw_data[:, 0]       # mV
+    RMS_SIGNAL = RMS_SIGNAL / R        # mA
     RMS_LOCKIN = raw_data[:, 1]        # mV
     DC_SIGNAL = raw_data[:, 2]         # mV
 
     # Calculate the RMS B-field
     def average_glass_bfield(current_mA):
-        m = Datum(9.51858, 0, "")
-        L = Datum(0.152231, 0, "m")
-        R = Datum(0.0101374, 0, "m")
-        D = Datum(1.02e-3, 0, "m")
-        MU = Datum(4*np.pi*1e-7, 0, "H")/Datum(1, 0, "m")
+        m = 9.51858
+        L = 0.152231
+        R = 0.0101374
+        D = 1.02e-3
+        MU = 4*np.pi*1e-7
 
         # Calculate the magnetic field
         Z = np.linspace(-GLASS_ROD_LENGTH/2, GLASS_ROD_LENGTH/2, 1000)
-        Z = [Datum(val, 0, "m") for val in z]
         K = m * MU / (2 * D)
-        seg1 = np.array([(L.value/2 - z.value) / np.sqrt((L.value/2 - z.value)**2 + R.value**2) for z in Z])
-        seg2 = np.array([(-L.value/2 - z.value) / np.sqrt((-L.value/2 - z.value)**2 + R.value**2) for z in Z])
-        dB = K * (seg1 - seg2) * current_mA
-        dB = [val.value for val in dB]
+        seg1 = np.array([(L/2 - z) / np.sqrt((L/2 - z)**2 + R**2) for z in Z])
+        seg2 = np.array([(-L/2 - z) / np.sqrt((-L/2 - z)**2 + R**2) for z in Z])
+        dB = K * (seg1 - seg2) * current_mA 
 
         # Integrate the average magnetic field
-        print(np.trapz(dB, z)/GLASS_ROD_LENGTH)
-        return np.trapz(dB, z)/GLASS_ROD_LENGTH  # T
+        return np.trapz(dB, Z)/GLASS_ROD_LENGTH  # mT
 
-    RMS_B_FIELD_T = [average_glass_bfield(I) for I in [val.value for val in RMS_SIGNAL]]
+    RMS_B_FIELD_T = [average_glass_bfield(I) for I in RMS_SIGNAL]
 
     # Calculate the RMS phase offset
     RMS_PHASE = 0.5 * RMS_LOCKIN/DC_SIGNAL  # rad
@@ -312,6 +305,7 @@ if AC_POLARIZATION:
     slope = K * result.best_values['slope']/GLASS_ROD_LENGTH
     slope_err = K * result.params['slope'].stderr/GLASS_ROD_LENGTH
     print(f"Verdet constant: {slope} deg/G/cm")
+    print(f"Error: {slope_err} deg/G/cm")
     
     # Show the plot
     plt.legend()
