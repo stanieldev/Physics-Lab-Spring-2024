@@ -84,7 +84,7 @@ def magnetic_field_fit(z, m, L, R):
 
 
 
-Z_DEPENDENCE = False
+Z_DEPENDENCE = True
 if Z_DEPENDENCE:
 
     # Load the data

@@ -114,23 +114,51 @@ if PLOT_KRAMERS_LAW:
     plt.show()
 
 
+
+
 THEORETICAL_KRAMERS_LAW = True
 if THEORETICAL_KRAMERS_LAW:
-    V = 35e+3          # Voltage in Volts
-    LAMBDA_0 = 1240/V  # Wavelength in nm
-    MAX_INTENSITY = 6330.73606
-    K = MAX_INTENSITY / (4*LAMBDA_0**2)
 
-    def _wavelength_nm(h, k, l):
-        A = 0.4026  # nm
+    # Load the data
+    data_35kV = np.loadtxt('xray_diffraction/kramers_law_nickel.txt', delimiter='\t', skiprows=3)
+
+    # Unpack the data
+    theta = data_35kV[:, 0]
+    intensity = data_35kV[:, 1]
+
+    # Set up the graph
+    plt.title('X-ray Diffraction : Intensity vs. Crystal Angle')
+    plt.xlabel('Crystal Angle θ (degrees)')
+    plt.ylabel('Intensity (a.u.)')
+    plt.xlim(5, 25)
+    plt.ylim(0, 7000)
+
+    # Use Kramers Law to find the intensity
+    V = 35e+3   # Voltage in Volts
+    A = 0.4026  # nm
+
+    def _wavelength_nm(a=A):
         THETA = 22.53*(np.pi/180)  # rad
-        return 2*A*np.sin(THETA) / np.sqrt(h**2 + k**2 + l**2)
+        return a*np.sin(THETA)
 
-    def _intensity(wavelen_nm):
-        return K * (wavelen_nm/LAMBDA_0 - 1) * wavelen_nm**(-2)
+    def _intensity(theta_rad, K, a=A):
+        COEFF = (V/1240)*a
+        return (K/a**2) * (COEFF * np.sin(theta_rad) - 1) / (np.sin(theta_rad)**2)
 
-    print(_wavelength_nm(1, 1, 1))
-    print(_intensity(_wavelength_nm(1, 1, 1)))
+    # Regression
+    theta_subset = theta[(theta >= 21) & (theta <= 24)]
+    intensity_subset = intensity[(theta >= 21) & (theta <= 24)]
+    model = lmfit.Model(_intensity)
+    params = model.make_params(K=6000)
+    result = model.fit(intensity_subset, params, theta_rad=theta_subset*(np.pi/180))
+    print(result.fit_report())
 
+    # Plot the data
+    plt.plot(theta, intensity, label='Unfiltered')
+    plt.plot(theta_subset, result.best_fit, label='Kramers Law Fit')
+
+    # Show the plot
+    plt.legend()
+    plt.show()
 
 
